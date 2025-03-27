@@ -129,3 +129,10 @@ cython_debug/
 
 # Output file
 extracted_texts.txt
+
+.DS_Store
+
+
+#folders
+lpu_pdfs/
+*.txt
