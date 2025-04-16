@@ -6,7 +6,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.chains import RetrievalQA
-from langchain.llms import HuggingFaceHub
+from langchain_community.llms import LlamaCpp
 from langchain.prompts import PromptTemplate
 
 
@@ -14,93 +14,83 @@ class LPUAdmissionsChatbot:
     def __init__(self, document_path):
         load_dotenv()
         torch.set_num_threads(1)
-
         # Load and split documents
         loader = TextLoader(document_path)
         documents = loader.load()
-
         text_splitter = CharacterTextSplitter(
-            chunk_size=500,  # Reduced chunk size for more precise retrieval
-            chunk_overlap=50
+            chunk_size=1000,  # Increased chunk size
+            chunk_overlap=100  # Increased overlap
         )
         docs = text_splitter.split_documents(documents)
-
         # Embeddings & Vector store
         embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         self.vectorstore = FAISS.from_documents(docs, embeddings)
 
-        # Strict Prompt Template
-        strict_prompt = PromptTemplate(
+        # Updated Prompt Template - less restrictive
+        prompt = PromptTemplate(
             template="""
-You are a precise admissions assistant for Lovely Professional University (LPU).
-IMPORTANT RULES:
-1. ONLY use the provided context to answer questions.
-2. DO NOT generate information not in the context.
-3. If the context does not contain a clear answer, respond with: "Sorry, I don't have specific information about this."
-
-Context: {context}
-
-Question: {question}
-
-Answer STRICTLY based on the context:""",
+            You are a helpful admissions assistant for Lovely Professional University (LPU).
+            
+            Context information from LPU documents:
+            {context}
+            
+            Question: {question}
+            
+            Please provide a helpful answer based primarily on the context information.
+            If the context doesn't contain sufficient information, acknowledge this
+            and provide a brief general response that might be helpful.
+            """,
             input_variables=["context", "question"]
         )
 
-        # LLM with lower temperature for more conservative responses
-        llm = HuggingFaceHub(
-            repo_id="mistralai/Mistral-7B-Instruct-v0.1",
-            model_kwargs={
-                "temperature": 0.1,  # Lowered temperature to reduce creativity
-                "max_new_tokens": 300  # Reduced token count
-            },
-            huggingfacehub_api_token=os.getenv('HUGGINGFACE_API_KEY')
+        # LLM - local TinyLlama
+        llm = LlamaCpp(
+            model_path="./models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+            temperature=0.3,
+            max_tokens=300,
+            n_ctx=2048,
+            n_batch=128,
+            n_threads=4,  # Tune this as per your MacBook
+            verbose=False
         )
 
-        # RAG Chain with stricter retrieval
+        # Less restrictive RAG Chain
         self.rag_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
             retriever=self.vectorstore.as_retriever(
                 search_kwargs={
-                    "k": 2,  # Limit to top 2 most relevant documents
-                    "score_threshold": 0.7  # Only retrieve highly relevant documents
+                    "k": 4,  # Increased number of documents
+                    "score_threshold": 0.4  # Lower threshold for more matches
                 }
             ),
-            chain_type_kwargs={"prompt": strict_prompt},
+            chain_type_kwargs={"prompt": prompt},
             return_source_documents=True
         )
 
     def ask(self, question):
-        # Preprocess the question to ensure it's about LPU admissions
-        # processed_question = f"LPU admissions: {question}"
-        processed_question = f"{question}"
-
         try:
-            result = self.rag_chain.invoke(processed_question)
+            result = self.rag_chain.invoke(question)
             answer = result.get(
-                "result", "Sorry, I don't have specific information about this.")
+                "result", "I don't have specific information about this in my knowledge base.")
             sources = result.get("source_documents", [])
 
-            # Additional validation
-            if not sources or all(len(doc.page_content.strip()) < 50 for doc in sources):
-                return "Sorry, I could not find relevant information about this LPU admission query."
+            # Less restrictive validation
+            if not sources:
+                return "I couldn't find relevant information about this query in the LPU documents."
 
             return answer
-
         except Exception as e:
             print(f"Error processing query: {e}")
             return "Sorry, I encountered an error processing your question."
 
 
 def main():
-    # Use the document you provided
     bot = LPUAdmissionsChatbot('./lpu_admissions.txt')
-
     while True:
         query = input("Ask me about LPU admissions: ")
         if query.lower() in ['exit', 'quit', 'bye']:
             break
-
         answer = bot.ask(query)
         print("Answer:", answer)
 
