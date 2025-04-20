@@ -31,11 +31,11 @@ class MessageRequest(BaseModel):
 @app.post("/chat/{chat_id}")
 def send_message(chat_id: str, request: MessageRequest, user_id=Depends(get_user_id)):
     # Store user's message
-    supabase.table("messages").insert({
-        "chat_id": chat_id,
-        "role": "user",
-        "content": request.query
-    }).execute()
+    # supabase.table("messages").insert({
+    #     "chat_id": chat_id,
+    #     "role": "user",
+    #     "content": request.query
+    # }).execute()
 
     # Run through RAG
     qa = get_qa_chain()
@@ -45,7 +45,8 @@ def send_message(chat_id: str, request: MessageRequest, user_id=Depends(get_user
     supabase.table("messages").insert({
         "chat_id": chat_id,
         "role": "assistant",
-        "content": result
+        "query": request.query,
+        "answer": result
     }).execute()
 
     return {"response": result}
@@ -54,3 +55,9 @@ def send_message(chat_id: str, request: MessageRequest, user_id=Depends(get_user
 def get_chat_history(chat_id: str, user_id=Depends(get_user_id)):
     messages = supabase.table("messages").select("*").eq("chat_id", chat_id).order("timestamp").execute().data
     return {"messages": messages}
+
+
+@app.get("/chats")
+def get_all_chats(user_id=Depends(get_user_id)):
+    chats = supabase.table("chats").select("*").eq("user_id", user_id).order("created_at", desc=True).execute().data
+    return {"chats": chats}
