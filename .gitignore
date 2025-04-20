@@ -134,6 +134,7 @@ extracted_texts.txt
 
 
 #folders
-lpu_pdfs/
-models/
-*.txt
+vectorstore/
+
+
+
