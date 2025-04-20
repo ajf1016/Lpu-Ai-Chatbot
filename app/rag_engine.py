@@ -27,7 +27,7 @@ def get_qa_chain():
     )
 
     embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    db = FAISS.load_local("../vectorstore/db_faiss", embedding_model, allow_dangerous_deserialization=True)
+    db = FAISS.load_local("vectorstore/db_faiss", embedding_model, allow_dangerous_deserialization=True)
 
     prompt = PromptTemplate(template=CUSTOM_PROMPT_TEMPLATE, input_variables=["context", "question"])
 

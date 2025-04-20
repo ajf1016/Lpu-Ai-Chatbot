@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from typing import Optional
-from supabase_client import supabase
-from dependencies import get_user_id
-from rag_engine import get_qa_chain
-from schemas import MessageRequest
+from app.supabase_client import supabase
+from app.dependencies import get_user_id
+from app.rag_engine import get_qa_chain
+from app.schemas import MessageRequest
 
 router = APIRouter()
 

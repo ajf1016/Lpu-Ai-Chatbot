@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from supabase_client import supabase
+from app.supabase_client import supabase
 from passlib.hash import bcrypt
 import jwt
 import os
