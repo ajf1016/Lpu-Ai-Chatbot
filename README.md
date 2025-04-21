@@ -67,13 +67,14 @@ The RAG engine is located in rag_engine.py and includes a custom prompt template
 ** BASE URL
 ```
 http://127.0.0.1:8000/api/
+# POST /signup — Register a new user via Supabase
+# POST /login — Log in and receive a JWT token
+# Start a New Chat (POST /chat/start)
+# Ask your qns (POST /chat/{chat_id})
+# Chat History (/chat/{chat_id}/history)
+# Chat List (/chats)
 ```
-** POST /signup — Register a new user via Supabase
-** POST /login — Log in and receive a JWT token
-** Start a New Chat (POST /chat/start)
-** Ask your qns (POST /chat/{chat_id})
-** Chat History (/chat/{chat_id}/history)
-** Chat List (/chats)
+
 
 
 
