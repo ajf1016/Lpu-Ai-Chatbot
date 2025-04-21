@@ -1,29 +1,18 @@
-# 🚨 Voice-based FIR Generator with RAG (Retrieval-Augmented Generation)
+# 🎓 RAG-Powered Admission Query System
 
-This project is a capstone system that allows users to generate FIRs from voice input using state-of-the-art LLMs and embeddings, with support for Retrieval-Augmented Generation (RAG), Supabase-based authentication, and LangChain integration.
-
----
+This project is a capstone system that allows students or users to ask admission-related queries and receive intelligent, context-aware responses using state-of-the-art LLMs and embeddings. It supports Retrieval-Augmented Generation (RAG), Supabase-based authentication, and LangChain integration to ensure secure and efficient interaction.
 
 ---
 
 ## 🧠 Features
 
-- ✅ Voice input to FIR generation using Whisper AI
-- ✅ Authentication with Supabase
-- ✅ Retrieval-Augmented Generation using LangChain and FAISS
-- ✅ Custom prompt templating
+- ✅ RAG-based query resolution for student admission FAQs
+- ✅ Authentication system using Supabase (Sign up & Login with JWT)
+- ✅ Fast and relevant responses using LangChain + FAISS vector database
 - ✅ HuggingFace LLM integration (Mistral-7B)
+- ✅ Custom prompt templating for more accurate and safe responses
 
----
-
-## 🛠️ Setup Instructions
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/voice-fir-rag.git
-cd voice-fir-rag
-```
+### Clone the Repository
 
 ## Create and Activate Virtual Environment
 
