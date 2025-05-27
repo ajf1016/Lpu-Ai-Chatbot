@@ -1,42 +1,55 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from app.supabase_client import supabase
+from sqlalchemy.orm import Session
 from passlib.hash import bcrypt
-import jwt
+from jose import jwt
 import os
+from app.db.database import SessionLocal
+from app.db.models import User
 
 router = APIRouter()
-SECRET_KEY = os.getenv("JWT_SECRET")
+SECRET_KEY = os.getenv("JWT_SECRET", "your-secret")  # fallback if not in env
 
-# Define a Pydantic model for the signup request body
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Pydantic Models
 class SignupRequest(BaseModel):
     name: str
     email: str
     password: str
 
-@router.post("/signup")
-def signup(request: SignupRequest):
-    hashed_pw = bcrypt.hash(request.password)
-    existing = supabase.table("users").select("*").eq("email", request.email).execute().data
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already exists")
-    user = supabase.table("users").insert({
-        "name": request.name,
-        "email": request.email,
-        "password": hashed_pw
-    }).execute().data[0]
-    token = jwt.encode({"user_id": user["id"]}, SECRET_KEY, algorithm="HS256")
-    return {"token": token}
-
-# Define a Pydantic model for the login request body
 class LoginRequest(BaseModel):
     email: str
     password: str
 
+@router.post("/signup")
+def signup(request: SignupRequest, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == request.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
+    hashed_pw = bcrypt.hash(request.password)
+    new_user = User(name=request.name, email=request.email, password=hashed_pw)
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    token = jwt.encode({"user_id": str(new_user.id)}, SECRET_KEY, algorithm="HS256")
+    return {"token": token}
+
+
 @router.post("/login")
-def login(request: LoginRequest):
-    user = supabase.table("users").select("*").eq("email", request.email).execute().data
-    if not user or not bcrypt.verify(request.password, user[0]["password"]):
+def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user or not bcrypt.verify(request.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = jwt.encode({"user_id": user[0]["id"]}, SECRET_KEY, algorithm="HS256")
+    
+    token = jwt.encode({"user_id": str(user.id)}, SECRET_KEY, algorithm="HS256")
     return {"token": token}
